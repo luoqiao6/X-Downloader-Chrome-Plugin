@@ -33,3 +33,6 @@ node_modules/
 __pycache__/
 *.pyc
 *.pyo 
+# Include documentation
+!doc/
+!doc/*.md
