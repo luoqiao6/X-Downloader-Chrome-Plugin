@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频下载调试工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .instructions {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 视频下载调试工具</h1>
+        
+        <div class="instructions">
+            <h3>使用说明：</h3>
+            <ol>
+                <li>确保您已经安装了X-Downloader Chrome扩展</li>
+                <li>打开一个包含视频的小红书笔记页面</li>
+                <li>点击下面的"开始调试"按钮</li>
+                <li>查看浏览器Console中的调试信息</li>
+                <li>将调试信息复制给我进行分析</li>
+            </ol>
+        </div>
+        
+        <div id="status"></div>
+        
+        <button class="button" onclick="startDebug()">🔍 开始调试</button>
+        <button class="button" onclick="testVideoExtraction()">🎬 测试视频提取</button>
+        <button class="button" onclick="clearConsole()">🧹 清空Console</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function showResults(content) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `<pre>${content}</pre>`;
+        }
+        
+        function startDebug() {
+            showStatus('正在启动调试工具...', 'info');
+            
+            // 检查是否在小红书页面
+            if (!window.location.href.includes('xiaohongshu.com')) {
+                showStatus('❌ 请在小红书页面使用此工具', 'error');
+                return;
+            }
+            
+            // 检查扩展是否加载
+            if (!window.xhsContentScript) {
+                showStatus('❌ X-Downloader扩展未加载，请重新加载扩展', 'error');
+                return;
+            }
+            
+            showStatus('✅ 开始调试，请查看Console输出', 'success');
+            
+            // 运行调试脚本
+            const debugScript = `
+                console.log('=== 视频下载调试工具 ===');
+                console.log('开始诊断视频下载问题...');
+                
+                // 检查扩展状态
+                console.log('1️⃣ 扩展状态检查:');
+                if (window.xhsContentScript) {
+                    console.log('✅ xhsContentScript 已加载');
+                    console.log('- 可用方法:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.xhsContentScript)));
+                } else {
+                    console.log('❌ xhsContentScript 未加载');
+                    return;
+                }
+                
+                // 检查页面类型
+                console.log('\\n2️⃣ 页面类型检查:');
+                console.log('- 当前URL:', window.location.href);
+                console.log('- 是否为笔记页面:', window.location.href.includes('/exploration/') || window.location.href.includes('/discovery/'));
+                
+                // 检查video元素
+                console.log('\\n3️⃣ Video元素检查:');
+                const videos = document.querySelectorAll('video');
+                console.log('- Video元素数量:', videos.length);
+                videos.forEach((video, index) => {
+                    console.log(\`Video \${index + 1}:\`, {
+                        src: video.src,
+                        currentSrc: video.currentSrc,
+                        dataset: video.dataset,
+                        attributes: Array.from(video.attributes).map(attr => \`\${attr.name}="\${attr.value}"\`)
+                    });
+                });
+                
+                // 检查弹出层
+                console.log('\\n4️⃣ 弹出层检查:');
+                const popup = document.querySelector('.note-detail-mask');
+                if (popup) {
+                    console.log('✅ 找到弹出层');
+                    console.log('- 可见性:', window.getComputedStyle(popup).display);
+                } else {
+                    console.log('❌ 未找到弹出层');
+                }
+                
+                // 测试视频提取
+                console.log('\\n5️⃣ 视频提取测试:');
+                if (window.xhsContentScript.extractNoteDetailVideos) {
+                    try {
+                        const videos = window.xhsContentScript.extractNoteDetailVideos();
+                        console.log('提取结果:', videos);
+                        console.log('视频数量:', videos.length);
+                    } catch (error) {
+                        console.error('提取出错:', error);
+                    }
+                } else {
+                    console.log('❌ extractNoteDetailVideos 方法不存在');
+                }
+                
+                console.log('\\n=== 调试完成 ===');
+                console.log('请将以上信息复制给我进行分析');
+            `;
+            
+            // 在页面中执行调试脚本
+            const script = document.createElement('script');
+            script.textContent = debugScript;
+            document.head.appendChild(script);
+            document.head.removeChild(script);
+        }
+        
+        function testVideoExtraction() {
+            if (!window.xhsContentScript) {
+                showStatus('❌ 扩展未加载', 'error');
+                return;
+            }
+            
+            if (!window.xhsContentScript.extractNoteDetailVideos) {
+                showStatus('❌ 视频提取方法不存在', 'error');
+                return;
+            }
+            
+            try {
+                const videos = window.xhsContentScript.extractNoteDetailVideos();
+                showStatus(`✅ 提取到 ${videos.length} 个视频`, 'success');
+                showResults(JSON.stringify(videos, null, 2));
+            } catch (error) {
+                showStatus(`❌ 提取失败: ${error.message}`, 'error');
+                showResults(error.stack);
+            }
+        }
+        
+        function clearConsole() {
+            console.clear();
+            showStatus('✅ Console已清空', 'success');
+        }
+        
+        // 页面加载时检查
+        window.addEventListener('load', () => {
+            if (window.location.href.includes('xiaohongshu.com')) {
+                showStatus('✅ 已在小红书页面，可以开始调试', 'success');
+            } else {
+                showStatus('⚠️ 请在小红书页面使用此工具', 'info');
+            }
+        });
+    </script>
+</body>
+</html> 

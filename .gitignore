@@ -1,0 +1,35 @@
+# Chrome Extension specific
+*.zip
+*.crx
+*.pem
+
+# Debug and test files
+debug_*.js
+test_*.js
+test_*.html
+simple_*.js
+manual_trigger.js
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Node modules (if any)
+node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo 
