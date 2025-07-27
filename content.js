@@ -1620,11 +1620,17 @@ class XHSContentScript {
                             const h264Stream = streams.h264[0];
                             if (h264Stream.masterUrl) {
                                 console.log('🎯 找到H.264视频URL:', h264Stream.masterUrl);
-                                videos.push(h264Stream.masterUrl);
+                                videos.push({
+                                    url: h264Stream.masterUrl,
+                                    type: 'video/mp4'
+                                });
                             }
                             if (h264Stream.backupUrls && h264Stream.backupUrls[0]) {
                                 console.log('🎯 找到H.264备用视频URL:', h264Stream.backupUrls[0]);
-                                videos.push(h264Stream.backupUrls[0]);
+                                videos.push({
+                                    url: h264Stream.backupUrls[0],
+                                    type: 'video/mp4'
+                                });
                             }
                         }
                         
@@ -1633,11 +1639,17 @@ class XHSContentScript {
                             streams.h265.forEach((h265Stream, index) => {
                                 if (h265Stream.masterUrl) {
                                     console.log(`🎯 找到H.265视频URL ${index}:`, h265Stream.masterUrl);
-                                    videos.push(h265Stream.masterUrl);
+                                    videos.push({
+                                        url: h265Stream.masterUrl,
+                                        type: 'video/mp4'
+                                    });
                                 }
                                 if (h265Stream.backupUrls && h265Stream.backupUrls[0]) {
                                     console.log(`🎯 找到H.265备用视频URL ${index}:`, h265Stream.backupUrls[0]);
-                                    videos.push(h265Stream.backupUrls[0]);
+                                    videos.push({
+                                        url: h265Stream.backupUrls[0],
+                                        type: 'video/mp4'
+                                    });
                                 }
                             });
                         }
@@ -1686,9 +1698,13 @@ class XHSContentScript {
                     let match;
                     while ((match = pattern.exec(content)) !== null) {
                         const videoUrl = match[1];
-                        if (!videos.includes(videoUrl)) {
+                        // 检查是否已经存在相同的URL
+                        if (!videos.find(v => v.url === videoUrl)) {
                             console.log(`🎯 从script ${index}找到视频URL:`, videoUrl);
-                            videos.push(videoUrl);
+                            videos.push({
+                                url: videoUrl,
+                                type: 'video/mp4'
+                            });
                         }
                     }
                 });
@@ -1741,7 +1757,12 @@ class XHSContentScript {
             console.log('找到src_loaded全局变量:', window.src_loaded);
             if (typeof window.src_loaded === 'string' && window.src_loaded.includes('.mp4')) {
                 console.log('🎯 从src_loaded找到视频URL:', window.src_loaded);
-                videos.push(window.src_loaded);
+                if (!videos.find(v => v.url === window.src_loaded)) {
+                    videos.push({
+                        url: window.src_loaded,
+                        type: 'video/mp4'
+                    });
+                }
                 return;
             }
         }
@@ -1777,7 +1798,12 @@ class XHSContentScript {
                 const value = playerContainer.getAttribute(attr);
                 if (value && value.includes('.mp4')) {
                     console.log(`🎯 从播放器容器${attr}找到视频URL:`, value);
-                    videos.push(value);
+                    if (!videos.find(v => v.url === value)) {
+                        videos.push({
+                            url: value,
+                            type: 'video/mp4'
+                        });
+                    }
                     return;
                 }
             });
@@ -1801,9 +1827,12 @@ class XHSContentScript {
                     let match;
                     while ((match = pattern.exec(content)) !== null) {
                         const videoUrl = match[1] || match[0];
-                        if (!videos.includes(videoUrl)) {
+                        if (!videos.find(v => v.url === videoUrl)) {
                             console.log(`🎯 从script ${index}找到视频URL:`, videoUrl);
-                            videos.push(videoUrl);
+                            videos.push({
+                                url: videoUrl,
+                                type: 'video/mp4'
+                            });
                         }
                     }
                 });
@@ -1817,7 +1846,12 @@ class XHSContentScript {
             entries.forEach(entry => {
                 if (entry.name && entry.name.includes('.mp4')) {
                     console.log(`🎯 从网络请求找到视频URL:`, entry.name);
-                    videos.push(entry.name);
+                    if (!videos.find(v => v.url === entry.name)) {
+                        videos.push({
+                            url: entry.name,
+                            type: 'video/mp4'
+                        });
+                    }
                 }
             });
         }
@@ -1830,7 +1864,12 @@ class XHSContentScript {
                 const value = localStorage.getItem(key) || sessionStorage.getItem(key);
                 if (value && value.includes('.mp4')) {
                     console.log(`🎯 从存储${key}找到视频URL:`, value);
-                    videos.push(value);
+                    if (!videos.find(v => v.url === value)) {
+                        videos.push({
+                            url: value,
+                            type: 'video/mp4'
+                        });
+                    }
                 }
             });
         } catch (error) {
@@ -2060,6 +2099,12 @@ class XHSContentScript {
         
         // 最终过滤：只排除PDF文件，保留所有其他文件
         const filteredVideos = videos.filter(video => {
+            // 检查video.url是否存在
+            if (!video || !video.url) {
+                console.log(`❌ 跳过无效视频对象:`, video);
+                return false;
+            }
+            
             const url = video.url.toLowerCase();
             const filename = url.split('/').pop().split('?')[0];
             
